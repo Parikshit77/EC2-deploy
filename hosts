@@ -1,0 +1,4 @@
+[local]
+localhost ansible_connection=local ansible_python_interpreter=python
+[remote]
+ec2-54-212-7-75.us-west-2.compute.amazonaws.com ansible_user=appdynamics ansible_ssh_private_key_file=/Users/parikshit.chakraborty/Downloads/e2e-appdynamics.pem
