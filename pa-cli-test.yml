@@ -1,0 +1,58 @@
+---
+  - name: Provision an EC2 Instance. Detailed steps by pa-cli-test
+    hosts: localhost
+    connection: local
+    gather_facts: False
+
+    # required parameters
+    vars:
+      instance_type: m4.xlarge
+      image: ami-09c95e8cb9856fe20
+      group: sg-92b85fed
+      subnet: subnet-0ba7ea72
+      keypair: platformadmin-test
+      region: us-west-2 # Change the Region
+      count: 1
+ 
+    # Task that will be used to Launch/Create an EC2 Instance
+    tasks:
+      - name: Launching the new EC2 test Instance
+        local_action: ec2
+                       instance_type={{ instance_type}}
+                       assign_public_ip=1
+                       group_id={{ group}}
+                       vpc_subnet_id={{ subnet}}
+                       image={{ image }}
+                       wait=true
+                       wait_timeout=500
+                       region={{ region }}
+                       keypair={{ keypair }}
+                       count={{count}}
+        register: ec2_crunchify
+
+      - name: Add the newly created EC2 instance(s) to the local host group
+        local_action: lineinfile 
+                      path=hosts
+                      insertafter="[remote]" line="{{ item.public_dns_name }} ansible_user=appdynamics ansible_ssh_private_key_file=/Users/parikshit.chakraborty/Downloads/e2e-appdynamics.pem"
+        with_items: '{{ec2_crunchify.instances}}'
+    
+
+      - name: Let's wait for SSH to come up. Usually that takes ~10 seconds
+        local_action: wait_for
+                      host={{ item.public_ip }}
+                      port=22
+                      state=started
+        with_items: '{{ ec2_crunchify.instances }}'
+       
+
+      - name: accept new ssh fingerprints
+        shell: ssh-keyscan -H {{ item.public_dns_name }} >> ~/.ssh/known_hosts
+        with_items: '{{ ec2_crunchify.instances }}'
+
+
+      - name: testing new task
+        ec2_tag: resource={{ item.id }} region={{ region }} state=present
+        with_items: '{{ec2_crunchify.instances}}'
+        args:
+          tags:
+            Name: Parikshit-{{ branch }}-{{ build }}

@@ -1,0 +1,19 @@
+---
+- name : copy file to remote
+  remote_user: appdynamics
+  hosts: remote
+
+  tasks:
+   - name: transfer PA Install scripts to remote
+     copy: src=/Users/parikshit.chakraborty/appd_home/automation_parikcha/ansible/{{ item }}  dest=/home/appdynamics/ mode=0755
+     with_items:
+      - remote.sh
+      - controllerinstall.sh
+      - license.lic
+
+   - name : Initial setup and Install PA
+     command: sh /home/appdynamics/remote.sh {{ branch }} {{ build }}
+
+   - name : Install Controller
+     command: sh /home/appdynamics/controllerinstall.sh
+
